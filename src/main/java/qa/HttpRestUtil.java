@@ -26,6 +26,9 @@ import static io.restassured.RestAssured.reset;
 import static io.restassured.config.EncoderConfig.encoderConfig;
 import static io.restassured.config.HttpClientConfig.httpClientConfig;
 
+/**
+ * Written By Pranshu Jain
+ */
 public class HttpRestUtil {
     private static Integer connectionTimeout = 160000;
     long waitForSleepTime = 10000;
