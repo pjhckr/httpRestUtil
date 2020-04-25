@@ -10,7 +10,8 @@ import io.restassured.http.Method;
 import io.restassured.mapper.ObjectMapperType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qa.constants.AuthType;
 import qa.constants.BodyType;
 
@@ -19,18 +20,16 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.reset;
 import static io.restassured.config.EncoderConfig.encoderConfig;
 import static io.restassured.config.HttpClientConfig.httpClientConfig;
 
 public class HttpRestUtil {
     private static Integer connectionTimeout = 160000;
     long waitForSleepTime = 10000;
-    static Logger log = Logger.getLogger(HttpRestUtil.class.getName());
+    private static Logger log = LoggerFactory.getLogger(HttpRestUtil.class);
     private Gson gson = new Gson();
     private RequestSpecification requestSpecification;
     private String baseUri;
@@ -40,11 +39,6 @@ public class HttpRestUtil {
     private String userName;
     private String password;
     private int defaultRunningStackTrace = 2;
-
-    {
-        log.setLevel(Level.SEVERE);
-        log.addHandler(new ConsoleHandler());
-    }
 
     /**
      * To set authentication
@@ -210,11 +204,11 @@ public class HttpRestUtil {
     /**
      * This method convert string given in below example and convert to map
      *
-     * @param stringToMapObject - Eg., "email=hello,email=hi,email=,email=null,email=  ,email=abc@xyz.in,id=1,id=8,From=0890000001,Url=http://my.us2.abcdef.com/connect";
+     * @param stringToMapObject - Eg., "email=hello,email=hi,email=,email=null,email=  ,email=abc@xyz.in,id=1,id=8,From=09XXXXXXXXXX1,Url=http://my.us2.abc.com/connect";
      * @return
      */
     private Map<String, ArrayList<String>> stringToMapConverter(Object stringToMapObject) {
-        HashMap<String, ArrayList<String>> map = new HashMap<String, ArrayList<String>>();
+        HashMap<String, ArrayList<String>> map = new HashMap<>();
 
         String query = (String) stringToMapObject;
         String[] paramStringsArray = query.split(",");
@@ -225,7 +219,7 @@ public class HttpRestUtil {
              * duplicate key values will be put into list
              */
             if (!map.containsKey(paramKeyValueArray[0].trim())) {
-                map.put(paramKeyValueArray[0].trim(), new ArrayList<String>());
+                map.put(paramKeyValueArray[0].trim(), new ArrayList<>());
             }
             /**
              * checking length to handle "empty string" value
@@ -334,8 +328,10 @@ public class HttpRestUtil {
                     + "###########################-RESPONSE_END-###########################"
                     + "\n \n" + "---------------------------------------------------------------------------------------------------" + "\n \n");
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
             response = null;
+        } finally {
+            reset();
         }
         return response;
     }
@@ -391,39 +387,5 @@ public class HttpRestUtil {
             e.printStackTrace();
         }
         return (T) resp;
-    }
-
-    /**
-     * @param restasured Response of http url
-     * @param wait       wait time to get response
-     * @return
-     */
-    public Response waitForHttpResponse(HttpRestUtil restasured, long wait) {
-        long maxWaitTime = System.currentTimeMillis() + wait;
-        Response response = null;
-        while (true) {
-            if (maxWaitTime < System.currentTimeMillis()) {
-                log.info("Response is not present ");
-                break;
-            }
-            response = restasured.process(Method.GET, null, ContentType.JSON);
-            if (response.getStatusCode() == 200 && !response.asString().isEmpty() && response.asString() != null && response.asString().length() > 0) {
-                log.info("Mock leyer response is Present:- "+response.asString());
-                break;
-            } else if (response.getStatusCode() == 200 && response.asString().isEmpty()) {
-                log.info("Mock leyer response status is 200 but Data is empty");
-            } else if (response.getStatusCode() == 200 && response.asString() == null) {
-                log.info("Mock leyer response status is 200 but Data is null");
-            } else if (response.getStatusCode() != 200) {
-                log.info("Mock leyer response status is not 200 OK");
-                break;
-            }
-            try {
-                Thread.sleep(waitForSleepTime);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        return response;
     }
 }
